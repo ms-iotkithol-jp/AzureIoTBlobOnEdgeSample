@@ -122,7 +122,7 @@
               }
             }
           },
-          "local-blob-storage-on-iotedge": {
+          "local-blob-storage": {
             "version": "1.0",
             "type": "docker",
             "status": "running",
@@ -144,10 +144,10 @@
             },
             "env": {
               "LOCAL_STORAGE_ACCOUNT_KEY": {
-                "value": "< local account >"
+                "value": "< local account key >"
               },
               "LOCAL_STORAGE_ACCOUNT_NAME": {
-                "value": "< local account key >"
+                "value": "< local account name >"
               }
             }
           }
@@ -158,8 +158,8 @@
       "properties.desired": {
         "schemaVersion": "1.0",
         "routes": {
-          "StoreImageToLocalBlobToIoTHub": "FROM /messages/modules/StoreImageToLocalBlob/outputs/* INTO $upstream",
-          "AzureBlobStorageonIoTEdgeToIoTHub": "FROM /messages/modules/AzureBlobStorageonIoTEdge/outputs/* INTO $upstream"
+          "StoreImageToLocalBlobToIoTHub": "FROM /messages/modules/store-image-to-local-blob/outputs/* INTO $upstream",
+          "AzureBlobStorageonIoTEdgeToIoTHub": "FROM /messages/modules/local-blob-storage/outputs/* INTO $upstream"
         },
         "storeAndForwardConfiguration": {
           "timeToLiveSecs": 7200

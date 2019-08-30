@@ -68,36 +68,40 @@ class BlobService(object):
         self.edgeId = edge_id
         self.blobLastUploadTime = time.time()
 
-    def upload_image(self, image):
+    def upload_image_to_blob(self, image):
         now = datetime.datetime.now()
         currentTime = time.time()
+        print('Last Time:'+str(self.blobLastUploadTIme+'->Current:'+str(currentTime)))
         if (currentTime - self.blobLastUploadTime > self.imageUploadDurationSec):
             image_file_name = self.edgeId + "-img{0:%Y%m%d%H%M%S}".format(now) +".jpg"
             # image_file_name = "image{0:%Y%m%d%H%M%S}".format(now) +".jpg"
-            print('Uploading image as '+image_file_name)
-            self.blockBlobService.create_blob_from_stream(self.imageContainerName, image_file_name, image)
+            print('Uploading image as '+image_file_name + ' at ' + str(currentTime))
+            # self.blockBlobService.create_blob_from_stream(self.imageContainerName, image_file_name, image)
             print('Upload done')
             self.blobLastUploadTIme = currentTime
 
 blobService = None
 
+storeImageRequestCount = 0
 
 # Like the CustomVision.ai Prediction service /image route handles either
 #     - octet-stream image file 
 #     - a multipart/form-data with files in the imageData parameter
 @app.route('/image', methods=['POST'])
 def store_image_handler():
-    print("image received")
+    global storeImageRequestCount
     try:
-        imageData = None
-        if ('imageData' in request.files):
-            imageData = request.files['imageData']
-        else:
-            imageData = io.BytesIO(request.get_data())
-            blobService.upload_image_to_blob(imageData)
-            print('stored image')
-    
-        results = '{"message":"image received for storing"}'
+        storeImageRequestCount += 1
+        if ((storeImageRequestCount%10) ==0):
+            print("images received - " + str(storeImageRequestCount))
+            imageData = None
+            if ('imageData' in request.files):
+                imageData = request.files['imageData']
+            else:
+                imageData = io.BytesIO(request.get_data())
+                blobService.upload_image_to_blob(imageData)
+                print('stored image')
+        results = []
         return json.dumps(results)
     except Exception as e:
         print('EXCEPTION:', str(e))
@@ -115,7 +119,7 @@ def initialize_blob_on_edge(blobOnEdgeModule,blobOnEdgeAccountName,blobOnEdgeAcc
     return blobService
 
 if __name__ == '__main__':
-    print('version : 0.1.7')
+    print('version : 0.2.6')
     print('app is '+__name__)
     # main(PROTOCOL)
     # for key in os.environ.keys():
@@ -136,6 +140,6 @@ if __name__ == '__main__':
     print('IMAGE_CONTAINER_NAME:'+IMAGE_CONTAINER_NAME)
     print('BLOB_UPLOAD_DURATION_SEC='+BLOB_UPLOAD_DURATION_SEC)
 
-    initialize_blob_on_edge(BLOB_ON_EDGE_MODULE,BLOB_ON_EDGE_ACCOUNT_NAME,BLOB_ON_EDGE_ACCOUNT_KEY,IMAGE_CONTAINER_NAME,BLOB_UPLOAD_DURATION_SEC, IOTEDGE_DEVICEID)
+    # initialize_blob_on_edge(BLOB_ON_EDGE_MODULE,BLOB_ON_EDGE_ACCOUNT_NAME,BLOB_ON_EDGE_ACCOUNT_KEY,IMAGE_CONTAINER_NAME,BLOB_UPLOAD_DURATION_SEC, IOTEDGE_DEVICEID)
 
- #   app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=80, debug=True)

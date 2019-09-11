@@ -42,10 +42,37 @@ BLOB_UPLOAD_DURATION_SEC = 10
 IMAGE_CONTAINER_NAME = "edgephotos"
 blobLastUploadTime = time.time()
 
+blobService = None
+storeImageRequestCount = 0
+
 # Default route just shows simple text
 @app.route('/')
 def index():
     return 'store image to blob on edge harness'
+
+# Like the CustomVision.ai Prediction service /image route handles either
+#     - octet-stream image file 
+#     - a multipart/form-data with files in the imageData parameter
+@app.route('/image', methods=['POST'])
+def store_image_handler():
+    global storeImageRequestCount
+    global blobService
+    try:
+        storeImageRequestCount += 1
+        if ((storeImageRequestCount%10) ==0):
+            print("images received - " + str(storeImageRequestCount))
+            imageData = None
+            if ('imageData' in request.files):
+                imageData = request.files['imageData']
+            else:
+                imageData = io.BytesIO(request.get_data())
+                blobService.upload_image_to_blob(imageData)
+                print('stored image')
+        results = []
+        return json.dumps(results)
+    except Exception as e:
+        print('EXCEPTION:', str(e))
+        return 'Error processing image', 500
 
 class BlobService(object):
     def __init__(
@@ -71,41 +98,15 @@ class BlobService(object):
     def upload_image_to_blob(self, image):
         now = datetime.datetime.now()
         currentTime = time.time()
-        print('Last Time:'+str(self.blobLastUploadTIme+'->Current:'+str(currentTime)))
+        print('Last Time:'+str(self.blobLastUploadTime)+'->Current:'+str(currentTime))
         if (currentTime - self.blobLastUploadTime > self.imageUploadDurationSec):
             image_file_name = self.edgeId + "-img{0:%Y%m%d%H%M%S}".format(now) +".jpg"
             # image_file_name = "image{0:%Y%m%d%H%M%S}".format(now) +".jpg"
             print('Uploading image as '+image_file_name + ' at ' + str(currentTime))
-            # self.blockBlobService.create_blob_from_stream(self.imageContainerName, image_file_name, image)
+            self.blockBlobService.create_blob_from_stream(self.imageContainerName, image_file_name, image)
             print('Upload done')
-            self.blobLastUploadTIme = currentTime
+            self.blobLastUploadTime = currentTime
 
-blobService = None
-
-storeImageRequestCount = 0
-
-# Like the CustomVision.ai Prediction service /image route handles either
-#     - octet-stream image file 
-#     - a multipart/form-data with files in the imageData parameter
-@app.route('/image', methods=['POST'])
-def store_image_handler():
-    global storeImageRequestCount
-    try:
-        storeImageRequestCount += 1
-        if ((storeImageRequestCount%10) ==0):
-            print("images received - " + str(storeImageRequestCount))
-            imageData = None
-            if ('imageData' in request.files):
-                imageData = request.files['imageData']
-            else:
-                imageData = io.BytesIO(request.get_data())
-                blobService.upload_image_to_blob(imageData)
-                print('stored image')
-        results = []
-        return json.dumps(results)
-    except Exception as e:
-        print('EXCEPTION:', str(e))
-        return 'Error processing image', 500
 
 def main(protocol):
     try:
@@ -119,7 +120,7 @@ def initialize_blob_on_edge(blobOnEdgeModule,blobOnEdgeAccountName,blobOnEdgeAcc
     return blobService
 
 if __name__ == '__main__':
-    print('version : 0.2.6')
+    print('version : 0.3.0')
     print('app is '+__name__)
     # main(PROTOCOL)
     # for key in os.environ.keys():
@@ -130,15 +131,16 @@ if __name__ == '__main__':
     BLOB_ON_EDGE_ACCOUNT_KEY = os.environ['BLOB_ON_EDGE_ACCOUNT_KEY']
     IMAGE_CONTAINER_NAME=os.environ['IMAGE_CONTAINER_NAME']
     IOTEDGE_DEVICEID=os.environ['IOTEDGE_DEVICEID']
-    BLOB_UPLOAD_DURATION_SEC = os.environ["BLOB_UPLOAD_DURATION_SEC"]
-   
-    print(' IOTEDGE_DEVICEID:'+ IOTEDGE_DEVICEID)
+    BLOB_UPLOAD_DURATION_SEC = float(os.environ["BLOB_UPLOAD_DURATION_SEC"])
+    
+
+    print('IOTEDGE_DEVICEID:'+ IOTEDGE_DEVICEID)
     print('BLOB_ON_EDGE_MODULE:'+BLOB_ON_EDGE_MODULE)
     print('BLOB_ON_EDGE_ACCOUNT_NAME:'+BLOB_ON_EDGE_ACCOUNT_NAME)
     print('BLOB_ON_EDGE_ACCOUNT_KEY:'+BLOB_ON_EDGE_ACCOUNT_KEY)
     print('IMAGE_CONTAINER_NAME:'+IMAGE_CONTAINER_NAME)
-    print('BLOB_UPLOAD_DURATION_SEC='+BLOB_UPLOAD_DURATION_SEC)
+    print('BLOB_UPLOAD_DURATION_SEC='+str(BLOB_UPLOAD_DURATION_SEC))
 
-    initialize_blob_on_edge(BLOB_ON_EDGE_MODULE,BLOB_ON_EDGE_ACCOUNT_NAME,BLOB_ON_EDGE_ACCOUNT_KEY,IMAGE_CONTAINER_NAME,BLOB_UPLOAD_DURATION_SEC, IOTEDGE_DEVICEID)
+    blobService = initialize_blob_on_edge(BLOB_ON_EDGE_MODULE,BLOB_ON_EDGE_ACCOUNT_NAME,BLOB_ON_EDGE_ACCOUNT_KEY,IMAGE_CONTAINER_NAME,BLOB_UPLOAD_DURATION_SEC,IOTEDGE_DEVICEID)
 
     app.run(host='0.0.0.0', port=80, debug=True)

@@ -1,0 +1,18 @@
+名前：
+store-image-to-local-blob
+
+イメージのURI：
+https://hub.docker.com/r/embeddedgeorge/store-image-to-local-blob
+
+deployment.template.json の image path：
+embeddedgeorge/cstore-image-to-local-blob:0.0.1-arm32v7
+
+コンテナーの作成オプション：
+なし
+
+環境変数：
+BLOB_ON_EDGE_MODULE:local-blob-storage         <- blob on edge の デプロイ名
+BLOB_ON_EDGE_ACCOUNT_NAME:< local account >    <- blob on edge の local storage account 
+BLOB_ON_EDGE_ACCOUNT_KEY:< local account key > <- blob on edge の local storage key
+IMAGE_CONTAINER_NAME:photos
+BLOB_UPLOAD_DURATION_SEC:60

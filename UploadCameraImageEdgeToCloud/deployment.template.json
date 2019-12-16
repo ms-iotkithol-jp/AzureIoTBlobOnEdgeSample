@@ -62,16 +62,26 @@
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
+            "env": {
+              "BLOB_ON_EDGE_MODULE":{
+                "value": "local-blob-storage"
+              },
+              "BLOB_ON_EDGE_ACCOUNT_NAME":{
+                "value": "< local account name >"
+              },
+              "BLOB_ON_EDGE_ACCOUNT_KEY":{
+                "value": "< local account key >"
+              },
+              "IMAGE_CONTAINER_NAME":{
+                "value": "photos"
+              },
+              "BLOB_UPLOAD_DURATION_SEC":{
+                "value": 60
+              }
+            },
             "settings": {
               "image": "${MODULES.StoreImageToLocalBlob.arm32v7}",
               "createOptions": {
-                "Env":[
-                  "BLOB_ON_EDGE_MODULE=local-blob-storage",
-                  "BLOB_ON_EDGE_ACCOUNT_NAME=< local account >",
-                  "BLOB_ON_EDGE_ACCOUNT_KEY=< local account key >",
-                  "IMAGE_CONTAINER_NAME=photos",
-                  "BLOB_UPLOAD_DURATION_SEC=60"
-                ]
               }
             }
           },
